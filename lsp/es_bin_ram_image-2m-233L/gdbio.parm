@@ -1,0 +1,15 @@
+//  Memory map file to generate linker scripts for programs to run on the XT2000
+
+// $Id: gdbio.parm,v 1.1 2015/08/11 07:40:21 tgni Exp $
+
+// Customer ID=4869; Build=0x172a8; Copyright (c) 2006 by Tensilica Inc.  ALL RIGHTS RESERVED.
+// These coded instructions, statements, and computer programs are the
+// copyrighted works and confidential proprietary information of Tensilica Inc.
+// They may not be modified, copied, reproduced, distributed, or disclosed to
+// third parties in any manner, medium, or form, in whole or in part, without
+// the prior written consent of Tensilica Inc.
+
+//  Show extra XT2000 memory map details.
+INCLUDE_XT2000_MEMORIES = try
+
+ROMING=true
