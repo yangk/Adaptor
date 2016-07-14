@@ -229,7 +229,7 @@ static void adaptor_upgrade(struct SmartFrame *frame)
 {
     struct AppFrame *app = (struct AppFrame *)frame->data;
     int len = frame->len - sizeof(struct AppFrame);
-    int ret = do_update(app->data, len);
+    int ret = do_update(app->cmd, app->data, len);
     if (ret > 0) 
     {
         ret += sizeof(struct AppFrame);

@@ -37,6 +37,9 @@
 #define CMD_ACK_PANID   0x1F
 #define CMD_TST_PLC     0x20
 #define CMD_CHG_TONE    0x21
+#define CMD_MCU_IMAGE_IN_63 0x22
+#define CMD_REQ_MCU_RST 0x23
+#define CMD_SUP_MCU     0xFE  //send update package
 
 #define CMD_ACK         0x00
 #define CMD_NAK         0xFF
@@ -44,6 +47,7 @@
 #define CMD_SET         0x07
 #define CMD_READ        0x02
 #define CMD_UPDATE      0x06
+#define CMD_UPDATE_MCU      0x05
 #define CMD_RELI_REPORT     0x01
 #define CMD_NRELI_REPORT    0x00
 

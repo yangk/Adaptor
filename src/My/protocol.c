@@ -465,6 +465,61 @@ static int on_chg_tone(uint8_t *data, int len)
     return 1;
 }
 //---------------------------------------------------------------------------------------
+extern struct McuUpdateInfo mcu_update_info;
+extern estimer_t mcu_reset_tmr;
+static int on_mcu_image_in_63(uint8_t *data, int len)
+{
+    if (len != 1) return -1;
+
+    mcu_update_info.mcu_image_in_63 = data[0] ? 1 : 0;
+
+    data[0] = CMD_ACK; 
+    return 1;
+}
+static int on_req_mcu_reset(uint8_t *data, int len)
+{
+    if (len != 1) return -1;
+    uint8_t flag = data[0] ? 1 : 0;
+    if(flag)
+        timer_stop(mcu_reset_tmr, TMR_PERIODIC);
+    return -1;
+}
+static int on_update_mcu(uint8_t *data, int len)
+{
+    int seq;
+    const char *addr = NULL;
+    struct Update *update = (struct Update *)data;
+
+    seq = get_le_val(update->seq, sizeof(update->seq)); 
+    memcpy(&mcu_update_info.image_size, (uint8_t *)IMAGES_MCU_ADDR, UPDATE_FILE_INFO);
+    switch (seq) 
+    {
+    case UPDATE_FINISHED:
+        timer_start(tmr_get_aid);
+        mcu_update_info.update_approved = 0;
+        return -1;
+    case 0:
+        timer_stop(tmr_get_aid, TMR_PERIODIC);
+        addr = (const char *)IMAGES_MCU_ADDR;
+        len = UPDATE_FILE_INFO;
+        break;
+    default:
+        addr = (const char *)(IMAGES_MCU_ADDR+UPDATE_FILE_INFO+(seq-1)*mcu_update_info.block_size);
+        len = mcu_update_info.block_size;
+        break;
+    }
+
+    data[0] = CMD_SUP_MCU;
+    update = (struct Update *)&data[1];
+    put_le_val(seq, update->seq, sizeof(update->seq));
+    update->ack = 0x01;
+    put_le_val(mcu_update_info.crc, update->crc, sizeof(update->crc));
+    update->len = len;
+    memcpy(update->data, addr, len);
+
+    return 1+update->len+UPDATE_HEAD;
+}
+//---------------------------------------------------------------------------------------
 static const struct LocalOps ops[] = 
 {
     {"SET AID", CMD_SET_AID, on_set_aid},
@@ -481,6 +536,9 @@ static const struct LocalOps ops[] =
     {"GET PID", CMD_GET_PANID, on_get_panid},
     {"TST PLC", CMD_TST_PLC,  on_tst_plc},
     {"CHG TONE",CMD_CHG_TONE, on_chg_tone},
+    {"CMD_MCU_IMAGE_IN_63", CMD_MCU_IMAGE_IN_63, on_mcu_image_in_63},
+    {"CMD_REQ_MCU_RST", CMD_REQ_MCU_RST, on_req_mcu_reset},
+    {"UPDT MCU",CMD_SUP_MCU,  on_update_mcu},
 };
 static const struct LocalOps *get_ops(int cmd)
 {
@@ -504,7 +562,8 @@ static int do_local_frame(struct SmartFrame *pframe)
         return -1;
     }
 
-    pr_info("Local Frame[%s]!\n", ops->name); 
+    pr_info("Local Frame[%s]!\n", ops->name);
+    print_debug_array(KERN_INFO, pframe, frame_len(pframe));
     int ret = ops->handle(&pframe->data[1], pframe->len-1);
     if (ret > 0)
     {
@@ -872,11 +931,12 @@ static int plc_frame_hook(const sdk_evt_rx_plc_t *info, struct SmartFrame *pfram
         else
             ret = do_cmd(info, app->cmd, tst_bit(pframe->seq, 7), app->data, len); 
         break;
+    case CMD_UPDATE_MCU:
     case CMD_UPDATE:
         {
             if (tst_bit(pframe->seq, 7)) 
                 return -1;
-            ret = do_update(app->data, len);
+            ret = do_update(app->cmd, app->data, len);
         }
         break;
     default:
@@ -917,7 +977,8 @@ int smart_frame_handle(struct SmartFrame *frame)
     }
     else if (!memcmp(frame->said, adaptor.aid, AID_LEN) && !is_all_xx(frame->taid, 0x00, AID_LEN)) 
     {
-        return do_send_frame(frame);
+        mcu_update_hook(frame);           
+    	return do_send_frame(frame);
     }
     else 
     {

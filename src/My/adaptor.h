@@ -9,7 +9,7 @@
 //#define SMART_MODEM
 
 #define ADAPTOR_VERSION         0x0200
-#define ADAPTOR_DATE            0x160628
+#define ADAPTOR_DATE            0x160713
 #define ADAPTOR_VERSION_EXT     "SSC1663-ADPT-V30A010"
 
 #define PLC_MATERIAL_CODE       "83676800003"
@@ -17,7 +17,7 @@
 
 enum LAYER_TYPE
 {
-    LAYER_PLC, LAYER_ADAPTOR, LAYER_NR
+    LAYER_PLC, LAYER_ADAPTOR, LAYER_MCU, LAYER_NR
 };
 
 enum APP_TYPE
@@ -31,15 +31,6 @@ struct AdaptorSetting
 {
     uint8_t aid[AID_LEN];
 };
-
-struct registerInfo
-{
-	uint8_t mac[MAC_LEN];
-	uint8_t aid[AID_LEN];
-	uint8_t len;
-	uint8_t depth;
-};
-
 #pragma pack()
 
 struct Adaptor
